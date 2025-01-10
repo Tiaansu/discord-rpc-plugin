@@ -1,0 +1,9 @@
+[submodule "deps/sampapi"]
+	path = deps/sampapi
+	url = https://github.com/BlastHackNet/SAMP-API.git
+[submodule "deps/rakhook"]
+	path = deps/rakhook
+	url = https://github.com/tiaansu/rakhook
+[submodule "deps/minhook"]
+	path = deps/minhook
+	url = https://github.com/TsudaKageyu/minhook
