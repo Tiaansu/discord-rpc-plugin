@@ -25,16 +25,13 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
-      - name: Install CMake
-        uses: lukka/get-cmake@latest
-        with:
-          cmakeVersion: '3.23.2'
-
       - name: Generate build files
+        env:
+          CMAKE_POLICY_VERSION_MINIMUM: "3.5"
         run: |
           mkdir build
           cd build
-          cmake -G "Visual Studio 17 2022" -A Win32 ..
+          cmake -G "Visual Studio 18 2026" -A Win32 ..
       
       - name: Build
         run: |
