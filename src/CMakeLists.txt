@@ -7,7 +7,6 @@ file(GLOB_RECURSE sources
 
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_SOURCE_DIR}/deps/sampapi/include
     ${CMAKE_SOURCE_DIR}/deps/rakhook/include
     ${CMAKE_SOURCE_DIR}/deps/minhook/include
     ${CMAKE_SOURCE_DIR}/deps/discord/include
@@ -31,4 +30,4 @@ if (NOT DISCORD_RPC_LIB)
     message(FATAL_ERROR "discord-rpc.lib was not found.")
 endif ()
 
-target_link_libraries(${PROJECT_NAME} PRIVATE sampapi minhook rakhook ${DISCORD_RPC_LIB})
+target_link_libraries(${PROJECT_NAME} PRIVATE minhook rakhook ${DISCORD_RPC_LIB})

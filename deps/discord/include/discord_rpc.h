@@ -23,14 +23,36 @@
 extern "C" {
 #endif
 
+// Only PLAYING, LISTENING and WATCHING can be used by RPC.
+enum ActivityType {
+    PLAYING = 0,
+    STREAMING = 1,
+    LISTENING = 2,
+    WATCHING = 3,
+    CUSTOM = 4,
+    COMPETING = 5
+};
+
+enum StatusDisplayType {
+    APPNAME = 0,
+    STATE = 1, // Artist on listening
+    DETAILS = 2 // Title on Listening
+};
+
 typedef struct DiscordRichPresence {
+    int64_t type;
+    int64_t displayType;
     const char* state;   /* max 128 bytes */
     const char* details; /* max 128 bytes */
     int64_t startTimestamp;
     int64_t endTimestamp;
-    const char* largeImageKey;  /* max 32 bytes */
+    const char* button1name;
+    const char* button1link;
+    const char* button2name;
+    const char* button2link;
+    const char* largeImageKey;  
     const char* largeImageText; /* max 128 bytes */
-    const char* smallImageKey;  /* max 32 bytes */
+    const char* smallImageKey;  
     const char* smallImageText; /* max 128 bytes */
     const char* partyId;        /* max 128 bytes */
     int partySize;
@@ -40,10 +62,6 @@ typedef struct DiscordRichPresence {
     const char* joinSecret;     /* max 128 bytes */
     const char* spectateSecret; /* max 128 bytes */
     int8_t instance;
-    const char* button1Label; /* max 32 bytes */
-    const char* button1Url;   /* max 512 bytes */
-    const char* button2Label; /* max 32 bytes */
-    const char* button2Url;   /* max 512 bytes */
 } DiscordRichPresence;
 
 typedef struct DiscordUser {
@@ -70,8 +88,8 @@ typedef struct DiscordEventHandlers {
 
 DISCORD_EXPORT void Discord_Initialize(const char* applicationId,
                                        DiscordEventHandlers* handlers,
-                                       int autoRegister,
-                                       const char* optionalSteamId);
+                                       bool autoRegister = false,
+                                       const char* optionalSteamId = "");
 DISCORD_EXPORT void Discord_Shutdown(void);
 
 /* checks for incoming messages, dispatches callbacks */
@@ -81,7 +99,7 @@ DISCORD_EXPORT void Discord_RunCallbacks(void);
 #ifdef DISCORD_DISABLE_IO_THREAD
 DISCORD_EXPORT void Discord_UpdateConnection(void);
 #endif
-
+DISCORD_EXPORT bool Discord_IsConnected();
 DISCORD_EXPORT void Discord_UpdatePresence(const DiscordRichPresence* presence);
 DISCORD_EXPORT void Discord_ClearPresence(void);
 

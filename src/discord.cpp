@@ -1,4 +1,5 @@
 #include <mutex>
+#include <Windows.h>
 
 #include "discord.hpp"
 
@@ -19,6 +20,7 @@ namespace Discord
     time_t discordAppStart;
     TimePoint lastUpdateTime = std::chrono::steady_clock::time_point(Milliseconds(0));
     bool shouldUpdate = false;
+    bool discordInitialized = false;
 
     bool isUsingOmp = false;
     
@@ -52,6 +54,11 @@ namespace Discord
 
     void Initialize()
     {
+        if (discordInitialized)
+        {
+            return;
+        }
+        
         std::lock_guard<std::mutex> lock(threadSafety);
         DiscordEventHandlers handlers;
         memset(&handlers, 0, sizeof(handlers));
@@ -61,18 +68,61 @@ namespace Discord
         handlers.disconnected = Disconnected;
         
         Discord_Initialize((discordAppCurrentId.empty()) ? DEFAULT_SAMP_APP_ID : discordAppCurrentId.c_str(), &handlers, 1, nullptr);
+        discordInitialized = true;
     }
 
     void Restart()
     {
+        if (!discordInitialized)
+        {
+            Initialize();
+            return;
+        }
+        
         Shutdown();
+
+        for (int i = 0; i < 100 && Discord_IsConnected(); ++ i)
+        {
+            Discord_RunCallbacks();
+            Sleep(10);
+        }
+
+        discordInitialized = false;
         Initialize();
     }
 
     void Shutdown()
     {
+        if (!discordInitialized)
+        {
+            return;
+        }
+
         Discord_ClearPresence();
         Discord_Shutdown();
+        discordInitialized = false;
+    }
+
+    void Reset()
+    {
+        const bool appChanged = discordAppCurrentId != DEFAULT_SAMP_APP_ID;
+
+        SetDefaultData();
+        if (appChanged)
+        {
+            Restart();
+        }
+
+        shouldUpdate = true;
+        Update();
+    }
+
+    void Poll()
+    {
+        if (discordInitialized)
+        {
+            Discord_RunCallbacks();
+        }
     }
 
     void Update(std::string state, std::string details, std::string largeAsset, std::string largeText, std::string smallAsset, std::string smallText, std::string button1, std::string button1Url, std::string button2, std::string button2Url)
@@ -90,9 +140,7 @@ namespace Discord
 
     void Update()
     {
-        Discord_RunCallbacks();
-
-        if (!shouldUpdate)
+        if (!shouldUpdate || !discordInitialized)
         {
             return;
         }
@@ -111,11 +159,11 @@ namespace Discord
 
         if (buttons_)
         {
-            presence.button1Label = std::get<0>(*buttons_).first.c_str();
-            presence.button1Url = std::get<0>(*buttons_).second.c_str();
+            presence.button1name = std::get<0>(*buttons_).first.c_str();
+            presence.button1link = std::get<0>(*buttons_).second.c_str();
 
-            presence.button2Label = std::get<1>(*buttons_).first.c_str();
-            presence.button2Url = std::get<1>(*buttons_).second.c_str();
+            presence.button2name = std::get<1>(*buttons_).first.c_str();
+            presence.button2link = std::get<1>(*buttons_).second.c_str();
         }
 
         Discord_UpdatePresence(&presence);
@@ -124,7 +172,22 @@ namespace Discord
 
     void SetDiscordAppId(const char* appId)
     {
-        discordAppCurrentId = (appId && *appId) ? appId : DEFAULT_SAMP_APP_ID;
+        std::string newId = (appId && *appId) ? appId : DEFAULT_SAMP_APP_ID;
+
+        if (!discordInitialized)
+        {
+            discordAppCurrentId = newId;
+            Initialize();
+            shouldUpdate = true;
+            return;
+        }
+
+        if (newId == discordAppCurrentId)
+        {
+            shouldUpdate = true;
+            return;
+        }
+        discordAppCurrentId = newId;
         Restart();
         shouldUpdate = true;
     }

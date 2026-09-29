@@ -20,18 +20,22 @@
         return strcat((dest[0] = EOS, dest), source, maxlength);
 #endif
 
-static const 
-    INIT_PRESENCE = 240,
-    SET_PRESENCE_APP_ID = 241,
-    SET_PRESENCE_ASSET_LARGE_DATA = 242,
-    SET_PRESENCE_ASSET_SMALL_DATA = 243,
-    SET_PRESENCE_STATE = 244,
-    SET_PRESENCE_DETAILS = 245,
-    SET_PRESENCE_BUTTONS = 246,
-    FORCE_UPDATE_PRESENCE = 247;
+static const PRESENCE_RPC = 240;
+
+enum _:PresenceAction 
+{
+    PresenceAction_Init = 0,
+    PresenceAction_AppID,
+    PresenceAction_AssetLarge,
+    PresenceAction_AssetSmall,
+    PresenceAction_State,
+    PresenceAction_Details,
+    PresenceAction_Buttons,
+    PresenceAction_ForceUpdate
+};
 
 // Internal
-ICustomRPC:INIT_PRESENCE(playerid, BitStream:bs)
+ICustomRPC:PRESENCE_RPC(playerid, BitStream:bs)
 {
     #if __pawn_build >= 11
         CallLocalFunction("OnPlayerRequestDiscordRichPresence", "i", playerid);
@@ -45,10 +49,11 @@ stock DiscordRPC_SetApplicationID(playerid, const id[], bool:updateImmediately =
 {
     new BitStream:bs = BS_New();
 
+    BS_WriteUint8(bs, PresenceAction_AppID);
     BS_WriteBool(bs, updateImmediately);
     BS_WriteString32(bs, id);
     
-    new ret = PR_SendRPC(bs, playerid, SET_PRESENCE_APP_ID);
+    new ret = PR_SendRPC(bs, playerid, PRESENCE_RPC);
 
     BS_Delete(bs);
     return ret;
@@ -58,11 +63,12 @@ stock DiscordRPC_SetAsset(playerid, const asset[], const assetText[], bool:isLar
 {
     new BitStream:bs = BS_New();
 
+    BS_WriteUint8(bs, isLarge ? PresenceAction_AssetLarge : PresenceAction_AssetSmall);
     BS_WriteBool(bs, updateImmediately);
     BS_WriteString32(bs, asset);
     BS_WriteString32(bs, assetText);
 
-    new ret = PR_SendRPC(bs, playerid, isLarge ? SET_PRESENCE_ASSET_LARGE_DATA : SET_PRESENCE_ASSET_SMALL_DATA);
+    new ret = PR_SendRPC(bs, playerid, PRESENCE_RPC);
 
     BS_Delete(bs);
     return ret;
@@ -82,10 +88,11 @@ stock DiscordRPC_SetState(playerid, const stateText[], bool:updateImmediately = 
 {
     new BitStream:bs = BS_New();
 
+    BS_WriteUint8(bs, PresenceAction_State);
     BS_WriteBool(bs, updateImmediately);
     BS_WriteString32(bs, stateText);
 
-    new ret = PR_SendRPC(bs, playerid, SET_PRESENCE_STATE);
+    new ret = PR_SendRPC(bs, playerid, PRESENCE_RPC);
 
     BS_Delete(bs);
     return ret;
@@ -95,10 +102,11 @@ stock DiscordRPC_SetDetails(playerid, const details[], bool:updateImmediately = 
 {
     new BitStream:bs = BS_New();
 
+    BS_WriteUint8(bs, PresenceAction_Details);
     BS_WriteBool(bs, updateImmediately);
     BS_WriteString32(bs, details);
 
-    new ret = PR_SendRPC(bs, playerid, SET_PRESENCE_DETAILS);
+    new ret = PR_SendRPC(bs, playerid, PRESENCE_RPC);
 
     BS_Delete(bs);
     return ret;
@@ -108,12 +116,13 @@ stock DiscordRPC_SetButtons(playerid, index, const button[], const buttonUrl[], 
 {
     new BitStream:bs = BS_New();
 
+    BS_WriteUint8(bs, PresenceAction_Buttons);
     BS_WriteBool(bs, updateImmediately);
     BS_WriteUint8(bs, index);
     BS_WriteString32(bs, button);
     BS_WriteString32(bs, buttonUrl);
 
-    new ret = PR_SendRPC(bs, playerid, SET_PRESENCE_BUTTONS);
+    new ret = PR_SendRPC(bs, playerid, PRESENCE_RPC);
 
     BS_Delete(bs);
     return ret;
@@ -132,7 +141,8 @@ stock DiscordRPC_SetButton2(playerid, const button[], const buttonUrl[], bool:up
 stock DiscordRPC_ForceUpdate(playerid)
 {
     new BitStream:bs = BS_New();
-    new ret = PR_SendRPC(bs, playerid, FORCE_UPDATE_PRESENCE);
+    BS_WriteUint8(bs, PresenceAction_ForceUpdate);
+    new ret = PR_SendRPC(bs, playerid, PRESENCE_RPC);
     BS_Delete(bs);
     return ret;
 }
@@ -140,6 +150,7 @@ stock DiscordRPC_ForceUpdate(playerid)
 stock DiscordRPC_InitData(playerid, const applicationId[], const stateText[], const details[], const largeAsset[] = "", const largeAssetText[] = "", const smallAsset[] = "", const smallAssetText[] = "", const button1[] = "", const button1Url[] = "", const button2[] = "", const button2Url[] = "")
 {
     new BitStream:bs = BS_New();
+    BS_WriteUint8(bs, PresenceAction_Init);
     BS_WriteString32(bs, applicationId);
     BS_WriteString32(bs, stateText);
     BS_WriteString32(bs, details);
@@ -152,7 +163,7 @@ stock DiscordRPC_InitData(playerid, const applicationId[], const stateText[], co
     BS_WriteString32(bs, button2);
     BS_WriteString32(bs, button2Url);
 
-    new ret = PR_SendRPC(bs, playerid, INIT_PRESENCE);
+    new ret = PR_SendRPC(bs, playerid, PRESENCE_RPC);
 
     BS_Delete(bs);
     return ret;
